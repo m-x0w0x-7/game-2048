@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>2048</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./style.css" />
+    <script src="./script.js"></script>
+  </head>
+  <body>
+    <div class="top">
+      <h1>2048</h1>
+      <div class="scores">
+        <div class="score">
+          <div class="score-label">Score</div>
+          <div class="score-val" id="score">0</div>
+        </div>
+        <div class="score">
+          <div class="score-label">Best</div>
+          <div class="score-val" id="best">0</div>
+        </div>
+      </div>
+    </div>
+    <div class="btns">
+      <button onclick="newGame()">New Game</button>
+      <button onclick="undo()">Undo</button>
+    </div>
+    <div class="game">
+      <div class="grid" id="grid"></div>
+      <div class="tiles" id="tiles"></div>
+      <div class="overlay" id="overlay">
+        <h2 id="ov-title">Game Over</h2>
+        <p id="ov-sub">Score: 0</p>
+        <button id="ov-btn" onclick="newGame()">Try Again</button>
+      </div>
+    </div>
+    <p class="hint">Swipe to move · Tap Undo to go back one step</p>
+  </body>
+</html>

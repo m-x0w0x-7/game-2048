@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function cellSize() {
-    return $('grid').children[0].offsetWidth;
+    return $('grid').children[0].getBoundingClientRect().width;
   }
 
   function render(newPos = [], mergedPos = []) {

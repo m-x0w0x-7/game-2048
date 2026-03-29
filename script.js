@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
   const N = 4;
-  let board, score, best, prev, prevScore, won;
+  let board, score, best, prev, prevScore, won, isAnimating;
+  let nextTileId = 1;
+  const tileElements = new Map(); // id → HTMLElement
 
   const COLORS = {
     2: { bg: '#2c2c48', fg: '#b8b4d8', fs: 38 },
@@ -34,32 +36,88 @@ document.addEventListener('DOMContentLoaded', () => {
     return $('grid').children[0].getBoundingClientRect().width;
   }
 
-  function render(newPos = [], mergedPos = []) {
-    const layer = $('tiles');
+  function tilePos(r, c) {
     const cs = cellSize();
     const gap = 10;
+    return { left: c * (cs + gap), top: r * (cs + gap), size: cs };
+  }
+
+  function applyTileStyle(el, tile, r, c, cls = 'tile') {
+    const { left, top, size } = tilePos(r, c);
+    el.className = cls;
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+    const cfg = COLORS[tile.value] || { bg: '#e8c200', fg: '#0f0f14', fs: 18 };
+    el.style.background = cfg.bg;
+    el.style.color = cfg.fg;
+    el.style.fontSize = cfg.fs + 'px';
+    el.textContent = tile.value;
+  }
+
+  // アニメーションなしで全タイルを再描画（新ゲーム・undo・リサイズ時）
+  function render(newPos = [], mergedIds = new Set()) {
+    const layer = $('tiles');
     layer.innerHTML = '';
+    tileElements.clear();
+
     for (let r = 0; r < N; r++) {
       for (let c = 0; c < N; c++) {
-        const v = board[r][c];
-        if (!v) continue;
-        const t = document.createElement('div');
-        t.className = 'tile';
+        const tile = board[r][c];
+        if (!tile.id) continue;
+
+        const el = document.createElement('div');
         const isNew = newPos.some((p) => p[0] === r && p[1] === c);
-        const isMerged = mergedPos.some((p) => p[0] === r && p[1] === c);
-        if (isMerged) t.className = 'tile merged';
-        else if (isNew) t.className = 'tile new';
-        t.style.width = cs + 'px';
-        t.style.height = cs + 'px';
-        t.style.left = c * (cs + gap) + 'px';
-        t.style.top = r * (cs + gap) + 'px';
-        const cfg = COLORS[v] || { bg: '#e8c200', fg: '#0f0f14', fs: 18 };
-        t.style.background = cfg.bg;
-        t.style.color = cfg.fg;
-        t.style.fontSize = cfg.fs + 'px';
-        t.textContent = v;
-        layer.appendChild(t);
+        const isMerged = mergedIds.has(tile.id);
+        const cls = isMerged ? 'tile merged' : isNew ? 'tile new' : 'tile';
+        applyTileStyle(el, tile, r, c, cls);
+
+        layer.appendChild(el);
+        tileElements.set(tile.id, el);
       }
+    }
+  }
+
+  function slideWithTracking(row) {
+    const items = row
+      .map((t, i) => ({ id: t.id, value: t.value, origIdx: i }))
+      .filter((t) => t.id !== 0);
+    const resultItems = [];
+    const moves = [];
+    let scoreGain = 0;
+    const mergedIds = new Set();
+    let i = 0;
+    while (i < items.length) {
+      const cur = items[i];
+      const toIdx = resultItems.length;
+      if (i + 1 < items.length && cur.value === items[i + 1].value) {
+        const next = items[i + 1];
+        const newVal = cur.value * 2;
+        scoreGain += newVal;
+        resultItems.push({ id: cur.id, value: newVal });
+        mergedIds.add(cur.id);
+        moves.push({ id: cur.id, from: cur.origIdx, to: toIdx });
+        moves.push({ id: next.id, from: next.origIdx, to: toIdx });
+        i += 2;
+      } else {
+        resultItems.push({ id: cur.id, value: cur.value });
+        moves.push({ id: cur.id, from: cur.origIdx, to: toIdx });
+        i++;
+      }
+    }
+    while (resultItems.length < N) resultItems.push({ id: 0, value: 0 });
+    return { arr: resultItems, moves, scoreGain, mergedIds };
+  }
+
+  // 移動アニメーション: タイル要素を新位置へ動かす（CSSトランジション発動）
+  function animateMove(allMoves) {
+    for (const { id, toR, toC } of allMoves) {
+      const el = tileElements.get(id);
+      if (!el) continue;
+      const { left, top } = tilePos(toR, toC);
+      el.style.left = left + 'px';
+      el.style.top = top + 'px';
     }
   }
 
@@ -79,38 +137,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function addTile() {
     const empties = [];
-    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (!board[r][c]) empties.push([r, c]);
+    for (let r = 0; r < N; r++)
+      for (let c = 0; c < N; c++)
+        if (!board[r][c].id) empties.push([r, c]);
     if (!empties.length) return null;
     const [r, c] = empties[Math.floor(Math.random() * empties.length)];
-    board[r][c] = Math.random() < 0.9 ? 2 : 4;
+    board[r][c] = { id: nextTileId++, value: Math.random() < 0.9 ? 2 : 4 };
     return [r, c];
   }
 
-  function slide(row) {
-    let arr = row.filter((x) => x);
-    const merged = [];
-    for (let i = 0; i < arr.length - 1; i++) {
-      if (arr[i] === arr[i + 1]) {
-        arr[i] *= 2;
-        score += arr[i];
-        arr.splice(i + 1, 1);
-        merged.push(i);
-      }
-    }
-    while (arr.length < N) arr.push(0);
-    return { arr, merged };
-  }
-
   function move(dir) {
-    if (won) return;
-    const old = board.map((r) => [...r]);
+    if (won || isAnimating) return;
+    const old = board.map((r) => r.map((t) => ({ ...t })));
     const oldScore = score;
-    const mergedCells = [];
+    const allMoves = []; // {id, toR, toC}
+    const mergedIds = new Set();
 
     for (let i = 0; i < N; i++) {
       let row, positions;
       if (dir === 'left') {
-        row = board[i];
+        row = [...board[i]];
         positions = Array.from({ length: N }, (_, c) => [i, c]);
       } else if (dir === 'right') {
         row = [...board[i]].reverse();
@@ -122,42 +168,60 @@ document.addEventListener('DOMContentLoaded', () => {
         row = board.map((r) => r[i]).reverse();
         positions = Array.from({ length: N }, (_, r) => [N - 1 - r, i]);
       }
-      const { arr, merged } = slide(row);
-      merged.forEach((mi) => mergedCells.push(positions[mi]));
-      arr.forEach((v, k) => {
+
+      const { arr, moves, scoreGain, mergedIds: rowMergedIds } = slideWithTracking(row);
+      score += scoreGain;
+      rowMergedIds.forEach((id) => mergedIds.add(id));
+
+      moves.forEach((m) => {
+        const [toR, toC] = positions[m.to];
+        allMoves.push({ id: m.id, toR, toC });
+      });
+
+      arr.forEach((tile, k) => {
         const [r, c] = positions[k];
-        board[r][c] = v;
+        board[r][c] = tile;
       });
     }
 
-    const moved = board.some((row, r) => row.some((v, c) => v !== old[r][c]));
-    if (!moved) return;
+    const moved = board.some((row, r) => row.some((t, c) => t.id !== old[r][c].id));
+    if (!moved) {
+      score = oldScore;
+      return;
+    }
 
     prev = old;
     prevScore = oldScore;
-    const newCell = addTile();
-    updateScore();
-    render(newCell ? [newCell] : [], mergedCells);
+    isAnimating = true;
 
-    if (board.some((r) => r.includes(2048)) && !won) {
-      won = true;
-      showOverlay('You Win!', 'Keep Going', () => {
-        won = false;
-        hideOverlay();
-      });
-      return;
-    }
-    if (!canMove()) {
-      showOverlay('Game Over', 'Try Again', newGame);
-    }
+    animateMove(allMoves);
+
+    setTimeout(() => {
+      const newCell = addTile();
+      updateScore();
+      render(newCell ? [newCell] : [], mergedIds);
+      isAnimating = false;
+
+      if (board.some((r) => r.some((t) => t.value === 2048)) && !won) {
+        won = true;
+        showOverlay('You Win!', 'Keep Going', () => {
+          won = false;
+          hideOverlay();
+        });
+        return;
+      }
+      if (!canMove()) {
+        showOverlay('Game Over', 'Try Again', newGame);
+      }
+    }, 110);
   }
 
   function canMove() {
     for (let r = 0; r < N; r++)
       for (let c = 0; c < N; c++) {
-        if (!board[r][c]) return true;
-        if (c < N - 1 && board[r][c] === board[r][c + 1]) return true;
-        if (r < N - 1 && board[r][c] === board[r + 1][c]) return true;
+        if (!board[r][c].id) return true;
+        if (c < N - 1 && board[r][c].value === board[r][c + 1].value) return true;
+        if (r < N - 1 && board[r][c].value === board[r + 1][c].value) return true;
       }
     return false;
   }
@@ -176,11 +240,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function newGame() {
-    board = Array.from({ length: N }, () => Array(N).fill(0));
+    board = Array.from({ length: N }, () =>
+      Array.from({ length: N }, () => ({ id: 0, value: 0 })),
+    );
     score = 0;
     prev = null;
     prevScore = 0;
     won = false;
+    isAnimating = false;
     hideOverlay();
     addTile();
     addTile();
@@ -191,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function undo() {
     if (!prev) return;
-    board = prev.map((r) => [...r]);
+    board = prev.map((r) => r.map((t) => ({ ...t })));
     score = prevScore;
     prev = null;
     $('score').textContent = score;
@@ -231,6 +298,10 @@ document.addEventListener('DOMContentLoaded', () => {
       move(map[e.key]);
     }
   });
+
+  // HTMLのonclick属性からアクセスできるようにグローバルへ公開
+  window.newGame = newGame;
+  window.undo = undo;
 
   // Init
   best = parseInt(localStorage.getItem('2048b') || '0');

@@ -190,6 +190,7 @@ button:active {
   pointer-events: none;
   transition: opacity 0.25s;
   backdrop-filter: blur(2px);
+  z-index: 10;
 }
 .overlay.on {
   opacity: 1;

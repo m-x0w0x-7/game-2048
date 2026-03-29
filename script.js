@@ -80,9 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function slideWithTracking(row) {
-    const items = row
-      .map((t, i) => ({ id: t.id, value: t.value, origIdx: i }))
-      .filter((t) => t.id !== 0);
+    const items = row.map((t, i) => ({ id: t.id, value: t.value, origIdx: i })).filter((t) => t.id !== 0);
     const resultItems = [];
     const moves = [];
     let scoreGain = 0;
@@ -137,9 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function addTile() {
     const empties = [];
-    for (let r = 0; r < N; r++)
-      for (let c = 0; c < N; c++)
-        if (!board[r][c].id) empties.push([r, c]);
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (!board[r][c].id) empties.push([r, c]);
     if (!empties.length) return null;
     const [r, c] = empties[Math.floor(Math.random() * empties.length)];
     board[r][c] = { id: nextTileId++, value: Math.random() < 0.9 ? 2 : 4 };
@@ -239,10 +235,12 @@ document.addEventListener('DOMContentLoaded', () => {
     $('overlay').classList.remove('on');
   }
 
+  document.querySelector('#ov-btn').addEventListener('click', () => {
+    console.log('try again');
+  });
+
   function newGame() {
-    board = Array.from({ length: N }, () =>
-      Array.from({ length: N }, () => ({ id: 0, value: 0 })),
-    );
+    board = Array.from({ length: N }, () => Array.from({ length: N }, () => ({ id: 0, value: 0 })));
     score = 0;
     prev = null;
     prevScore = 0;
@@ -271,6 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
   game.addEventListener(
     'touchstart',
     (e) => {
+      if (e.target.closest('#overlay')) return;
       tx = e.touches[0].clientX;
       ty = e.touches[0].clientY;
       e.preventDefault();
@@ -280,6 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
   game.addEventListener(
     'touchend',
     (e) => {
+      if (e.target.closest('#overlay')) return;
       const dx = e.changedTouches[0].clientX - tx;
       const dy = e.changedTouches[0].clientY - ty;
       if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;

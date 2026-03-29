@@ -6,6 +6,7 @@
 }
 :root {
   --bg: #0f0f14;
+  --bgLight: #243549;
   --surface: #1c1c28;
   --grid: #252535;
   --empty: #1e1e2c;
@@ -14,7 +15,8 @@
   --gold: #e8a820;
 }
 body {
-  background: var(--bg);
+  background: linear-gradient(180deg, var(--bgLight) 0%, var(--bg) 100%);
+  background-attachment: fixed;
   color: var(--text);
   min-height: 100svh;
   display: flex;
@@ -119,6 +121,7 @@ button:active {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
+  opacity: 0.8;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -142,40 +145,48 @@ button:active {
   font-weight: 700;
   line-height: 1;
   transition:
-    left 0.1s ease,
-    top 0.1s ease;
+    left 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    top 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   will-change: transform;
 }
 .tile.new {
-  animation: pop 0.2s ease forwards;
+  animation: water-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 .tile.merged {
-  animation: burst 0.18s ease forwards;
+  z-index: 10;
+  animation: lunar-burst 0.4s ease-out forwards;
 }
-@keyframes pop {
+@keyframes water-pop {
   0% {
-    transform: scale(0);
+    transform: scale(0.5) translateY(10px);
     opacity: 0;
+    filter: blur(10px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+@keyframes lunar-burst {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(164, 226, 241, 0);
+  }
+  30% {
+    box-shadow: 0 0 10px 5px rgba(164, 226, 241, 0.4);
   }
   60% {
-    transform: scale(1.1);
+    transform: scale(1.08);
+  }
+  90% {
+    transform: scale(1);
   }
   100% {
-    transform: scale(1);
-    opacity: 1;
+    box-shadow: 0 0 20px 10px rgba(164, 226, 241, 0);
   }
 }
-@keyframes burst {
-  0% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(1.18);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
+
 .overlay {
   position: absolute;
   inset: 0;
@@ -221,4 +232,11 @@ button:active {
   font-size: 12px;
   color: var(--muted);
   margin-top: 24px;
+}
+
+#bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
 }

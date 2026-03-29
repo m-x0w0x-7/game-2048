@@ -5,17 +5,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const tileElements = new Map(); // id → HTMLElement
 
   const COLORS = {
-    2: { bg: '#2c2c48', fg: '#b8b4d8', fs: 38 },
-    4: { bg: '#3a3860', fg: '#ccc8f0', fs: 38 },
-    8: { bg: '#7a3c18', fg: '#ffd0a0', fs: 38 },
-    16: { bg: '#9e3c0e', fg: '#ffd8a8', fs: 38 },
-    32: { bg: '#b4320c', fg: '#ffe0b0', fs: 34 },
-    64: { bg: '#c0280a', fg: '#ffe8c0', fs: 34 },
-    128: { bg: '#b87a0c', fg: '#fff0c0', fs: 28 },
-    256: { bg: '#c08c0e', fg: '#fff4c0', fs: 28 },
-    512: { bg: '#c89e10', fg: '#fffad0', fs: 24 },
-    1024: { bg: '#d0b010', fg: '#fffce0', fs: 20 },
-    2048: { bg: '#e8c200', fg: '#0f0f14', fs: 20 },
+    2: { bg: '#0B132B', fg: '#E6F7FC', fs: 38 },
+    4: { bg: '#1A2F4F', fg: '#E6F7FC', fs: 38 },
+    8: { bg: '#2A4D6F', fg: '#E6F7FC', fs: 38 },
+    16: { bg: '#3A6A92', fg: '#E6F7FC', fs: 38 },
+    32: { bg: '#4B89A3', fg: '#FFFFFF', fs: 34 },
+    64: { bg: '#65A9C1', fg: '#0B132B', fs: 34 },
+    128: { bg: '#86CDDB', fg: '#1A2F4F', fs: 28 },
+    256: { bg: '#A4E2F1', fg: '#1A2F4F', fs: 28 },
+    512: { bg: '#C3F0FB', fg: '#2A4D6F', fs: 24 },
+    1024: { bg: '#E6F7FC', fg: '#3A6A92', fs: 20 },
+    2048: { bg: '#FFFFFF', fg: '#4B89A3', fs: 20 },
   };
 
   function $(id) {
@@ -309,4 +309,69 @@ document.addEventListener('DOMContentLoaded', () => {
   buildGrid();
   newGame();
   window.addEventListener('resize', () => render());
+
+  // background
+  const canvas = document.getElementById('bg');
+  const ctx = canvas.getContext('2d');
+
+  let particles = [];
+  const particleCount = 40; // 泡の数（多すぎるとタイルの動きを邪魔するので控えめに）
+
+  // 画面サイズに合わせる
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+
+  // 泡のオブジェクト
+  class Particle {
+    constructor() {
+      this.init();
+    }
+
+    init() {
+      this.x = Math.random() * canvas.width;
+      // this.y = canvas.height + Math.random() * 100; // 画面下から登場
+      this.y = Math.random() * canvas.height;
+      this.size = Math.random() * 3 + 1; // 1px〜4pxの小さな泡
+      this.speed = Math.random() * 0.5 + 0.1; // ゆっくり昇る
+      this.opacity = Math.random() * 0.5; // 儚い透明度
+    }
+
+    update() {
+      this.y -= this.speed;
+      // 画面上に消えたらリセット
+      if (this.y < -10) this.init();
+      this.x += Math.sin(this.y / 10) * 0.5;
+    }
+
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(164, 226, 241, ${this.opacity})`; // タイルカラーに合わせた水色
+      ctx.fill();
+    }
+  }
+
+  // 初期生成
+  for (let i = 0; i < particleCount; i++) {
+    particles.push(new Particle());
+  }
+
+  // アニメーションループ
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    particles.forEach((p) => {
+      p.update();
+      p.draw();
+    });
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
 });

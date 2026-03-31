@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const ctx = canvas.getContext('2d');
 
   let particles = [];
-  const particleCount = 40; // 泡の数（多すぎるとタイルの動きを邪魔するので控えめに）
+  const particleCount = 30; // 泡の数（多すぎるとタイルの動きを邪魔するので控えめに）
 
   // 画面サイズに合わせる
   function resize() {
@@ -337,22 +337,31 @@ document.addEventListener('DOMContentLoaded', () => {
       // this.y = canvas.height + Math.random() * 100; // 画面下から登場
       this.y = Math.random() * canvas.height;
       this.size = Math.random() * 3 + 1; // 1px〜4pxの小さな泡
-      this.speed = Math.random() * 0.5 + 0.1; // ゆっくり昇る
-      this.opacity = Math.random() * 0.5; // 儚い透明度
+      this.speed = Math.random() * 0.08 + 0.05; // ゆっくり昇る
+      this.opacity = Math.random() * 0.4; // 儚い透明度
+      this.blur = Math.random() * 4;
     }
 
     update() {
       this.y -= this.speed;
       // 画面上に消えたらリセット
       if (this.y < -10) this.init();
-      this.x += Math.sin(this.y / 10) * 0.5;
+      this.x += Math.sin(this.y / 30) * 0.3;
+      this.y -= this.speed * (this.size / 2); // 大きいほど速く昇る
     }
 
     draw() {
+      ctx.save(); // 現在の状態を保存
+      ctx.filter = `blur(${this.blur}px)`; // ぼかしを設定
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(164, 226, 241, ${this.opacity})`; // タイルカラーに合わせた水色
+      if (this.index % 10 === 0) {
+        ctx.fillStyle = `rgb(235 225 197 / ${this.opacity})`;
+      } else {
+        ctx.fillStyle = `rgb(164 226 241 / ${this.opacity})`;
+      }
       ctx.fill();
+      ctx.restore();
     }
   }
 

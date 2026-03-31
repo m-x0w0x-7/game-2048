@@ -10,9 +10,11 @@
   --surface: #1c1c28;
   --grid: #252535;
   --empty: #1e1e2c;
-  --text: #f0ece4;
-  --muted: #6868a0;
+  --text: #e6f7fc;
+  --muted: #4b89a3;
   --gold: #e8a820;
+  /* --moon: #ebe1c5; */
+  --moon: #cdc09c;
 }
 body {
   background: linear-gradient(180deg, var(--bgLight) 0%, var(--bg) 100%);
@@ -26,7 +28,7 @@ body {
   overflow: hidden;
   position: fixed;
   width: 100%;
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Bodoni Moda', serif;
   font-optical-sizing: auto;
   font-weight: 500;
   font-style: normal;
@@ -47,11 +49,12 @@ body {
   justify-content: space-between;
   margin-bottom: 14px;
 }
-h1 {
+.title {
   font-size: 56px;
-  color: var(--gold);
+  color: var(--moon);
   line-height: 1;
-  letter-spacing: -2px;
+  text-shadow: 0 0 10px rgb(75 137 163 / 0.4);
+  letter-spacing: 0.02em;
 }
 .scores {
   display: flex;
@@ -93,6 +96,7 @@ button {
   border: none;
   border-radius: 12px;
   padding: 13px 20px;
+  font-family: 'Bodoni Moda', serif;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
